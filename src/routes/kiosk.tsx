@@ -1,11 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { VisitorPortal } from "@/components/visitor/VisitorPortal";
 
-const title = "Avertech Visitor Portal — Check In Securely";
+const title = "Reception Kiosk — Avertech Visitor Portal";
 const description =
-  "Register your visit, verify with OTP, and check in at Avertech in under two minutes. Returning visitors can retrieve their profile instantly.";
+  "Touch-friendly reception kiosk for Avertech visitors. Select new or returning visitor to begin check-in.";
 
-export const Route = createFileRoute("/")({
+export const Route = createFileRoute("/kiosk")({
   head: () => ({
     meta: [
       { title },
@@ -14,9 +14,9 @@ export const Route = createFileRoute("/")({
       { property: "og:description", content: description },
     ],
   }),
-  component: Index,
+  component: KioskPage,
 });
 
-function Index() {
-  return <VisitorPortal />;
+function KioskPage() {
+  return <VisitorPortal kiosk />;
 }
