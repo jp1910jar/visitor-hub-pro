@@ -47,9 +47,9 @@ export function FormInput({
   ...props
 }: {
   label: string;
-  error?: string;
-  hint?: string;
-  icon?: ReactNode;
+  error?: string | undefined;
+  hint?: string | undefined;
+  icon?: ReactNode | undefined;
 } & ComponentPropsWithoutRef<"input">) {
   const id = useId();
   return (
@@ -79,8 +79,8 @@ export function PhoneInput({
   value,
   onChange,
 }: {
-  label?: string;
-  error?: string;
+  label?: string | undefined;
+  error?: string | undefined;
   value: string;
   onChange: (v: string) => void;
 }) {
@@ -120,12 +120,12 @@ export function SelectField({
   className,
 }: {
   label: string;
-  error?: string;
+  error?: string | undefined;
   options: readonly string[];
   value: string;
   onChange: (v: string) => void;
-  placeholder?: string;
-  className?: string;
+  placeholder?: string | undefined;
+  className?: string | undefined;
 }) {
   const id = useId();
   return (
@@ -165,11 +165,11 @@ export function TextareaField({
   className,
 }: {
   label: string;
-  error?: string;
+  error?: string | undefined;
   value: string;
   onChange: (v: string) => void;
-  placeholder?: string;
-  className?: string;
+  placeholder?: string | undefined;
+  className?: string | undefined;
 }) {
   const id = useId();
   return (

@@ -38,7 +38,15 @@ export type VisitRecord = {
   date: string;
 };
 
-type Errors = Record<string, string>;
+type Errors = {
+  fullName?: string;
+  mobile?: string;
+  email?: string;
+  company?: string;
+  hostId?: string;
+  visitType?: string;
+  purpose?: string;
+};
 
 export function NewVisitorFlow({
   onComplete,
