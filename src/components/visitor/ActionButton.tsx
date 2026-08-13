@@ -1,5 +1,6 @@
-import { motion } from "motion/react";
-import type { ComponentPropsWithoutRef, ReactNode } from "react";
+import { motion, type HTMLMotionProps } from "motion/react";
+import type { ReactNode } from "react";
+
 
 type Variant = "primary" | "ghost" | "outline";
 
