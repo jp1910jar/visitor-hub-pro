@@ -96,17 +96,8 @@ export function LandingChoice({
             Check in under 2 minutes
           </span>
         </div>
-      ) : (
-        <ActionButton
-          variant="ghost"
-          className="mt-8"
-          onClick={() => onSelect("new")}
-          aria-hidden
-          tabIndex={-1}
-        >
-          <span className="sr-only">Start</span>
-        </ActionButton>
-      )}
+      ) : null}
     </div>
   );
 }
+
