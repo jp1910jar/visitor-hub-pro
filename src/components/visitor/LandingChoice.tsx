@@ -1,6 +1,5 @@
 import { motion } from "motion/react";
 import { UserPlus, RotateCcw, ArrowRight, ShieldCheck, Clock3 } from "lucide-react";
-import { ActionButton } from "./ActionButton";
 import { COMPANY } from "@/lib/visitor-data";
 
 const options = [
