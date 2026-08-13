@@ -14,11 +14,12 @@ function FieldShell({
 }: {
   label: string;
   htmlFor: string;
-  error?: string;
-  hint?: string;
+  error?: string | undefined;
+  hint?: string | undefined;
   children: ReactNode;
-  className?: string;
+  className?: string | undefined;
 }) {
+
   return (
     <div className={`space-y-2 ${className}`}>
       <label htmlFor={htmlFor} className="block text-[13px] font-medium text-foreground">
