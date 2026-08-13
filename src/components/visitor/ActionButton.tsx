@@ -22,13 +22,14 @@ export function ActionButton({
   size?: "md" | "lg";
   icon?: ReactNode;
   children: ReactNode;
-} & ComponentPropsWithoutRef<"button">) {
+} & Omit<HTMLMotionProps<"button">, "children">) {
   return (
     <motion.button
       whileHover={{ y: -1 }}
       whileTap={{ scale: 0.985 }}
       transition={{ type: "spring", stiffness: 400, damping: 26 }}
-      {...(props as ComponentPropsWithoutRef<typeof motion.button>)}
+      {...props}
+
       className={`inline-flex items-center justify-center gap-2 rounded-xl font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
         size === "lg" ? "px-6 py-4 text-[15px]" : "px-5 py-3 text-[14.5px]"
       } ${VARIANTS[variant]} ${className}`}
