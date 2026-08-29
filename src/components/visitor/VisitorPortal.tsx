@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import heroImage from "@/assets/reception-hero.jpg";
+import heroImage from "@/assets/reception-hero.jpg.png";
 import { BrandHeader } from "./BrandHeader";
 import { LandingChoice } from "./LandingChoice";
 import { NewVisitorFlow, type VisitRecord } from "./NewVisitorFlow";

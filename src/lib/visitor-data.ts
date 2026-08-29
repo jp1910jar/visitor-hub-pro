@@ -33,10 +33,12 @@ export const STATUS_META: Record<
   cancelled: { label: "Visit Cancelled", tone: "danger" },
 };
 
+// Trimmed to the 3 stages the visitor actually needs to see on their own
+// live-status screen. The other statuses (waiting_approval, host_notified,
+// host_arrived, etc.) still exist in VisitStatus/STATUS_META above for the
+// admin-side approval workflow - they're just not shown to the visitor here.
 export const LIVE_STATUS_FLOW: VisitStatus[] = [
   "checked_in",
-  "host_notified",
-  "host_arrived",
   "meeting_in_progress",
   "completed",
 ];
@@ -52,10 +54,10 @@ export type Host = {
 export const HOSTS: Host[] = [
   {
     id: "h1",
-    name: "Rahul Sharma",
-    designation: "Engineering Manager",
-    department: "Engineering",
-    initials: "RS",
+    name: "Jitendra Bauddha",
+    designation: "CEO",
+    department: "DevOps",
+    initials: "JB",
   },
   {
     id: "h2",
@@ -64,34 +66,7 @@ export const HOSTS: Host[] = [
     department: "Client Success",
     initials: "PS",
   },
-  {
-    id: "h3",
-    name: "Aditya Menon",
-    designation: "Head of Product",
-    department: "Product",
-    initials: "AM",
-  },
-  {
-    id: "h4",
-    name: "Neha Kulkarni",
-    designation: "Talent Lead",
-    department: "People & Culture",
-    initials: "NK",
-  },
-  {
-    id: "h5",
-    name: "Vikram Iyer",
-    designation: "Finance Controller",
-    department: "Finance",
-    initials: "VI",
-  },
-  {
-    id: "h6",
-    name: "Sana Qureshi",
-    designation: "Facilities Manager",
-    department: "Administration",
-    initials: "SQ",
-  },
+ 
 ];
 
 export const VISIT_TYPES = [
@@ -168,14 +143,7 @@ export const KNOWN_VISITOR: VisitorProfile = {
       purpose: "Client Discussion",
       status: "completed",
     },
-    {
-      id: "VIS-2026-00041",
-      date: "18 July 2026",
-      hostName: "Aditya Menon",
-      department: "Product",
-      purpose: "Product Roadmap Review",
-      status: "completed",
-    },
+    
   ],
 };
 

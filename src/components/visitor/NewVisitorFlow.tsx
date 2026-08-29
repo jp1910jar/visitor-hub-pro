@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import {
   ArrowLeft,
@@ -14,6 +14,8 @@ import { FormInput, PhoneInput, SelectField, TextareaField } from "./Fields";
 import { HostSelector } from "./HostSelector";
 import { OTPPanel } from "./OTPPanel";
 import { ActionButton } from "./ActionButton";
+import { CameraCapture } from "./CameraCapture";
+import { visitService } from "@/lib/services";
 import {
   DURATIONS,
   HOSTS,
@@ -36,6 +38,7 @@ export type VisitRecord = {
   visit: VisitDetails;
   time: string;
   date: string;
+  photoDataUrl?: string;
 };
 
 type Errors = {
@@ -65,8 +68,31 @@ export function NewVisitorFlow({
   const [personal, setPersonal] = useState<PersonalDetails>(initialPersonal ?? emptyPersonal);
   const [visit, setVisit] = useState<VisitDetails>(emptyVisit);
   const [errors, setErrors] = useState<Errors>({});
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState("");
+  const [photoDataUrl, setPhotoDataUrl] = useState<string | undefined>();
+  const [showPhotoOptions, setShowPhotoOptions] = useState(false);
+  const [showCamera, setShowCamera] = useState(false);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
 
   const host = HOSTS.find((h) => h.id === visit.hostId);
+
+  function handlePhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 3 * 1024 * 1024) {
+      alert("Please choose an image under 3MB.");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      setPhotoDataUrl(reader.result as string);
+      setShowPhotoOptions(false);
+    };
+    reader.readAsDataURL(file);
+  }
 
   function set<K extends keyof PersonalDetails>(key: K, value: string) {
     setPersonal((p) => ({ ...p, [key]: value }));
@@ -93,16 +119,54 @@ export function NewVisitorFlow({
     return Object.keys(e).length === 0;
   }
 
-  function finish() {
-    const now = new Date();
-    onComplete({
-      visitId: generateVisitId(),
-      personal,
-      host: host!,
-      visit,
-      time: formatTime(now),
-      date: formatDate(now),
-    });
+  async function finish() {
+    setSaving(true);
+    setSaveError("");
+
+    try {
+      const saved = await visitService.create({
+        fullName: personal.fullName,
+        mobile: personal.mobile,
+        email: personal.email,
+        company: personal.company,
+        designation: personal.designation,
+        profilePhoto: photoDataUrl,
+        hostName: host!.name,
+        department: visit.department,
+        purpose: visit.purpose,
+        visitType: visit.visitType,
+        duration: visit.duration,
+        reference: visit.reference,
+      });
+
+      const checkInDate = new Date(saved.checkInTime);
+      onComplete({
+        visitId: saved.visitId,
+        personal,
+        host: host!,
+        visit,
+        time: formatTime(checkInDate),
+        date: formatDate(checkInDate),
+        photoDataUrl,
+      });
+    } catch (err) {
+      console.error("Failed to save visit:", err);
+      setSaveError("We couldn't save your visit to the system, but you can still continue.");
+      // Fall back to a local-only record so the visitor isn't stuck if the
+      // API call fails - note this visit won't show up for admin.
+      const now = new Date();
+      onComplete({
+        visitId: generateVisitId(),
+        personal,
+        host: host!,
+        visit,
+        time: formatTime(now),
+        date: formatDate(now),
+        photoDataUrl,
+      });
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -179,15 +243,75 @@ export function NewVisitorFlow({
                 />
                 <div className="space-y-2">
                   <span className="block text-[13px] font-medium">Profile Photo</span>
-                  <div className="flex items-center gap-3 rounded-xl border border-dashed border-border bg-secondary/40 p-3">
-                    <span className="grid size-11 shrink-0 place-items-center rounded-full bg-card text-[13px] font-semibold text-muted-foreground">
-                      {personal.fullName ? initialsOf(personal.fullName) : <Camera className="size-4" />}
-                    </span>
-                    <div className="min-w-0">
-                      <p className="text-[13px] font-medium">Add a photo</p>
-                      <p className="text-[12px] text-muted-foreground">Optional · helps reception</p>
+
+                  {/* Gallery falls back to the normal file/photo picker on
+                      every platform. Camera capture uses a real getUserMedia
+                      modal instead (below) so it actually works on desktop
+                      webcams too, not just mobile. */}
+                  <input
+                    ref={galleryInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handlePhotoChange}
+                    className="hidden"
+                  />
+
+                  {showPhotoOptions ? (
+                    <div className="flex items-center gap-2 rounded-xl border border-dashed border-border bg-secondary/40 p-3">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowPhotoOptions(false);
+                          setShowCamera(true);
+                        }}
+                        className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-card px-3 py-2.5 text-[13px] font-medium text-foreground shadow-sm transition-colors hover:bg-accent"
+                      >
+                        <Camera className="size-4" aria-hidden />
+                        Use Camera
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => galleryInputRef.current?.click()}
+                        className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-card px-3 py-2.5 text-[13px] font-medium text-foreground shadow-sm transition-colors hover:bg-accent"
+                      >
+                        Choose from Gallery
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setShowPhotoOptions(false)}
+                        className="px-2 text-[12px] text-muted-foreground hover:text-foreground"
+                        aria-label="Cancel"
+                      >
+                        Cancel
+                      </button>
                     </div>
-                  </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setShowPhotoOptions(true)}
+                      className="flex w-full items-center gap-3 rounded-xl border border-dashed border-border bg-secondary/40 p-3 text-left transition-colors hover:bg-secondary/60"
+                    >
+                      {photoDataUrl ? (
+                        <img
+                          src={photoDataUrl}
+                          alt="Profile preview"
+                          className="size-11 shrink-0 rounded-full object-cover"
+                        />
+                      ) : (
+                        <span className="grid size-11 shrink-0 place-items-center rounded-full bg-card text-[13px] font-semibold text-muted-foreground">
+                          {personal.fullName ? initialsOf(personal.fullName) : <Camera className="size-4" />}
+                        </span>
+                      )}
+                      <div className="min-w-0">
+                        <p className="text-[13px] font-medium">
+                          {photoDataUrl ? "Change photo" : "Add a photo"}
+                        </p>
+                        <p className="text-[12px] text-muted-foreground">
+                          {photoDataUrl ? "Tap to replace" : "Optional · helps reception"}
+                        </p>
+                      </div>
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -276,10 +400,28 @@ export function NewVisitorFlow({
           {step === 2 ? (
             <section className="py-4">
               <OTPPanel mobile={personal.mobile} onVerified={finish} />
+              {saving ? (
+                <p className="mt-4 text-center text-[13px] text-muted-foreground">
+                  Saving your visit...
+                </p>
+              ) : null}
+              {saveError ? (
+                <p className="mt-4 text-center text-[13px] text-destructive">{saveError}</p>
+              ) : null}
             </section>
           ) : null}
         </motion.div>
       </AnimatePresence>
+
+      {showCamera ? (
+        <CameraCapture
+          onCapture={(dataUrl) => {
+            setPhotoDataUrl(dataUrl);
+            setShowCamera(false);
+          }}
+          onClose={() => setShowCamera(false)}
+        />
+      ) : null}
     </div>
   );
 }

@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import { motion } from "motion/react";
 import { Check, ArrowRight } from "lucide-react";
 import { ActionButton } from "./ActionButton";
-import { VisitSummary, VisitorQRCode } from "./VisitSummary";
+import { VisitSummary } from "./VisitSummary";
+import { VisitorIDCard } from "./VisitorIDCard";
 import { StepProgress, NEW_VISITOR_STEPS } from "./StepProgress";
 import type { VisitRecord } from "./NewVisitorFlow";
 
@@ -15,7 +16,6 @@ function Confetti() {
       hue: ["bg-primary", "bg-brand", "bg-success", "bg-warning"][i % 4],
     })),
   );
-
   return (
     <div className="pointer-events-none absolute left-1/2 top-8 h-32 w-0" aria-hidden>
       {pieces.map((p) => (
@@ -49,7 +49,6 @@ export function ConfirmationScreen({
   return (
     <div>
       <StepProgress steps={NEW_VISITOR_STEPS} current={3} />
-
       <div className="relative mt-10 text-center">
         {showConfetti ? <Confetti /> : null}
         <motion.span
@@ -91,7 +90,7 @@ export function ConfirmationScreen({
           ]}
         />
         <div className="mt-7">
-          <VisitorQRCode visitId={record.visitId} />
+          <VisitorIDCard record={record} />
         </div>
       </motion.div>
 
