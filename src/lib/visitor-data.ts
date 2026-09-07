@@ -191,3 +191,9 @@ export function maskMobile(mobile: string) {
   if (digits.length < 4) return "+91 XXXXX XXXXX";
   return `+91 XXXXX ${digits.slice(-5)}`;
 }
+export function maskEmail(email: string) {
+  const [local, domain] = email.split("@");
+  if (!domain) return email;
+  const visible = local.slice(0, 2);
+  return `${visible}${"*".repeat(Math.max(local.length - 2, 3))}@${domain}`;
+}

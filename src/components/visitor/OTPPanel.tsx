@@ -1,23 +1,43 @@
 import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Check, ShieldCheck } from "lucide-react";
-import { maskMobile } from "@/lib/visitor-data";
-
-const CORRECT = "123456";
+import { Check, ShieldCheck, Loader2 } from "lucide-react";
+import { maskEmail } from "@/lib/visitor-data";
+import { otpService } from "@/lib/services";
 
 export function OTPPanel({
-  mobile,
+  email,
   onVerified,
   title = "Let's verify your details",
 }: {
-  mobile: string;
+  email: string;
   onVerified: () => void;
   title?: string;
 }) {
   const [digits, setDigits] = useState<string[]>(Array(6).fill(""));
-  const [status, setStatus] = useState<"idle" | "error" | "success">("idle");
-  const [seconds, setSeconds] = useState(30);
+  const [status, setStatus] = useState<"idle" | "verifying" | "error" | "success">("idle");
+  const [errorMessage, setErrorMessage] = useState("");
+  const [sending, setSending] = useState(false);
+  const [sendError, setSendError] = useState("");
+  const [seconds, setSeconds] = useState(0);
   const refs = useRef<Array<HTMLInputElement | null>>([]);
+
+  async function requestOtp() {
+    setSending(true);
+    setSendError("");
+    try {
+      await otpService.send(email);
+      setSeconds(30);
+    } catch (err: any) {
+      setSendError(err?.response?.data?.message || "Couldn't send the OTP. Please try again.");
+    } finally {
+      setSending(false);
+    }
+  }
+
+  useEffect(() => {
+    requestOtp();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (seconds <= 0) return;
@@ -31,14 +51,24 @@ export function OTPPanel({
     return () => clearTimeout(t);
   }, [status, onVerified]);
 
-  function commit(next: string[]) {
+  async function commit(next: string[]) {
     setDigits(next);
     const code = next.join("");
-    if (code.length === 6) {
-      if (code === CORRECT) setStatus("success");
-      else setStatus("error");
-    } else if (status === "error") {
-      setStatus("idle");
+    if (code.length !== 6) {
+      if (status === "error") {
+        setStatus("idle");
+        setErrorMessage("");
+      }
+      return;
+    }
+
+    setStatus("verifying");
+    try {
+      await otpService.verify(email, code);
+      setStatus("success");
+    } catch (err: any) {
+      setErrorMessage(err?.response?.data?.message || "That code doesn't match.");
+      setStatus("error");
     }
   }
 
@@ -95,8 +125,25 @@ export function OTPPanel({
             </span>
             <h3 className="mt-4 text-xl font-semibold">{title}</h3>
             <p className="mt-1.5 text-[14px] text-muted-foreground">
-              OTP sent to {maskMobile(mobile)}
+              {sending ? "Sending OTP..." : `OTP sent to ${maskEmail(email)}`}
             </p>
+
+            {sendError ? (
+              <motion.div
+                initial={{ opacity: 0, y: -4 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mx-auto mt-4 max-w-xs rounded-xl bg-destructive/10 px-4 py-2.5 text-[13px] text-destructive"
+              >
+                {sendError}{" "}
+                <button
+                  type="button"
+                  onClick={requestOtp}
+                  className="font-semibold underline underline-offset-2"
+                >
+                  Try again
+                </button>
+              </motion.div>
+            ) : null}
 
             <div className="mt-7 flex justify-center gap-2 sm:gap-2.5">
               {digits.map((d, i) => (
@@ -109,30 +156,32 @@ export function OTPPanel({
                   inputMode="numeric"
                   autoComplete="one-time-code"
                   aria-label={`Digit ${i + 1}`}
+                  disabled={sending || status === "verifying"}
                   onChange={(e) => handleChange(i, e.target.value)}
                   onKeyDown={(e) => handleKeyDown(i, e)}
                   animate={d ? { scale: [1, 1.08, 1] } : { scale: 1 }}
                   transition={{ duration: 0.18 }}
-                  className={`size-12 rounded-xl border bg-card text-center text-lg font-semibold tabular-nums outline-none transition-all focus:border-primary focus:ring-4 focus:ring-primary/12 sm:size-14 sm:text-xl ${
+                  className={`size-12 rounded-xl border bg-card text-center text-lg font-semibold tabular-nums outline-none transition-all focus:border-primary focus:ring-4 focus:ring-primary/12 disabled:opacity-50 sm:size-14 sm:text-xl ${
                     status === "error" ? "border-destructive text-destructive" : "border-border"
                   }`}
                 />
               ))}
             </div>
 
-            {status === "error" ? (
+            {status === "verifying" ? (
+              <p className="mt-4 inline-flex items-center gap-1.5 text-[13px] text-muted-foreground">
+                <Loader2 className="size-3.5 animate-spin" aria-hidden />
+                Verifying...
+              </p>
+            ) : status === "error" ? (
               <motion.p
                 initial={{ opacity: 0, y: -4 }}
                 animate={{ opacity: 1, y: 0 }}
                 className="mt-4 text-[13px] font-medium text-destructive"
               >
-                That code doesn't match. For this demo, use 123456.
+                {errorMessage}
               </motion.p>
-            ) : (
-              <p className="mt-4 text-[13px] text-muted-foreground">
-                Demo code: <span className="font-medium text-foreground">123456</span>
-              </p>
-            )}
+            ) : null}
 
             <p className="mt-5 text-[13px] text-muted-foreground">
               Didn't receive the code?{" "}
@@ -141,8 +190,9 @@ export function OTPPanel({
               ) : (
                 <button
                   type="button"
-                  onClick={() => setSeconds(30)}
-                  className="font-semibold text-primary underline-offset-4 hover:underline"
+                  onClick={requestOtp}
+                  disabled={sending}
+                  className="font-semibold text-primary underline-offset-4 hover:underline disabled:opacity-50"
                 >
                   Resend OTP
                 </button>

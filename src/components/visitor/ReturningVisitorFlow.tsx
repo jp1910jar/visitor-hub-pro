@@ -164,10 +164,10 @@ export function ReturningVisitorFlow({
             className="card-premium mt-7 p-7 sm:p-9"
           >
             <OTPPanel
-              mobile={method === "mobile" ? value : KNOWN_VISITOR.personal.mobile}
-              title="Verify it's you"
-              onVerified={() => setPhase("profile")}
-            />
+  email={profile.personal.email}
+  title="Verify it's you"
+  onVerified={() => setPhase("profile")}
+/>
           </motion.section>
         ) : null}
 

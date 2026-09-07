@@ -399,7 +399,7 @@ export function NewVisitorFlow({
 
           {step === 2 ? (
             <section className="py-4">
-              <OTPPanel mobile={personal.mobile} onVerified={finish} />
+              <OTPPanel email={personal.email} onVerified={finish} />
               {saving ? (
                 <p className="mt-4 text-center text-[13px] text-muted-foreground">
                   Saving your visit...
