@@ -5,7 +5,8 @@ import { ActionButton } from "./ActionButton";
 import { FormInput, PhoneInput } from "./Fields";
 import { OTPPanel } from "./OTPPanel";
 import { VisitorProfileCard, VisitHistory } from "./ProfilePanels";
-import { KNOWN_VISITOR, type PersonalDetails } from "@/lib/visitor-data";
+import { visitorService } from "@/lib/services";
+import type { PersonalDetails, VisitorProfile } from "@/lib/visitor-data";
 
 type Method = "mobile" | "email" | "visitorId";
 type Phase = "lookup" | "searching" | "notfound" | "otp" | "profile";
@@ -27,22 +28,37 @@ export function ReturningVisitorFlow({
   const [value, setValue] = useState("");
   const [phase, setPhase] = useState<Phase>("lookup");
   const [error, setError] = useState<string | undefined>();
+  const [profile, setProfile] = useState<VisitorProfile | null>(null);
 
-  function find() {
+  async function find() {
     if (!value.trim()) {
       setError("Enter your details to continue.");
       return;
     }
     setError(undefined);
     setPhase("searching");
-    setTimeout(() => {
-      const digits = value.replace(/\D/g, "");
-      const match =
-        (method === "mobile" && digits.length === 10) ||
-        (method === "email" && /^\S+@\S+\.\S+$/.test(value)) ||
-        (method === "visitorId" && value.trim().toUpperCase().startsWith("VIS-"));
-      setPhase(match ? "otp" : "notfound");
-    }, 900);
+
+    try {
+      const params =
+        method === "mobile"
+          ? { mobile: value }
+          : method === "email"
+            ? { email: value }
+            : { visitorId: value };
+
+      const result = await visitorService.lookup(params);
+
+      if (result) {
+        setProfile(result);
+        setPhase("otp");
+      } else {
+        setPhase("notfound");
+      }
+    } catch (err) {
+      console.error("Visitor lookup failed:", err);
+      setError("Something went wrong while searching. Please try again.");
+      setPhase("lookup");
+    }
   }
 
   return (
@@ -155,7 +171,7 @@ export function ReturningVisitorFlow({
           </motion.section>
         ) : null}
 
-        {phase === "otp" ? (
+        {phase === "otp" && profile ? (
           <motion.section
             key="otp"
             initial={{ opacity: 0, y: 14 }}
@@ -164,22 +180,22 @@ export function ReturningVisitorFlow({
             className="card-premium mt-7 p-7 sm:p-9"
           >
             <OTPPanel
-  email={profile.personal.email}
-  title="Verify it's you"
-  onVerified={() => setPhase("profile")}
-/>
+              email={profile.personal.email}
+              title="Verify it's you"
+              onVerified={() => setPhase("profile")}
+            />
           </motion.section>
         ) : null}
 
-        {phase === "profile" ? (
+        {phase === "profile" && profile ? (
           <motion.section
             key="profile"
             initial={{ opacity: 0, y: 14 }}
             animate={{ opacity: 1, y: 0 }}
             className="mt-7 space-y-7"
           >
-            <VisitorProfileCard profile={KNOWN_VISITOR} />
-            <VisitHistory profile={KNOWN_VISITOR} />
+            <VisitorProfileCard profile={profile} />
+            <VisitHistory profile={profile} />
             <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
               <ActionButton variant="outline" size="lg" onClick={onExit}>
                 Not you?
@@ -187,7 +203,7 @@ export function ReturningVisitorFlow({
               <ActionButton
                 size="lg"
                 icon={<ArrowRight className="size-4" />}
-                onClick={() => onCheckInAgain(KNOWN_VISITOR.personal)}
+                onClick={() => onCheckInAgain(profile.personal)}
               >
                 Check In Again
               </ActionButton>
